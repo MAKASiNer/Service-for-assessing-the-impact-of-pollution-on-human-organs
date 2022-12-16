@@ -1,0 +1,6 @@
+Flask==2.2.2
+Flask_APScheduler==1.12.4
+Flask_Mail==0.9.1
+lxml==4.9.1
+peewee==3.15.3
+Werkzeug==2.2.2

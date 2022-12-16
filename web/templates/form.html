@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title%} {{ title }} {% endblock %}
+
+{% block body%}
+<div class="uk-container">
+    <div class="uk-flex">
+        <div class="uk-margin-auto uk-width-xlarge uk-card uk-card-default uk-card-body">
+            <h4 class="uk-card-title">{{ title }}</h4>
+            <form method="post">
+                {% for row in form %}
+                <div class="uk-child-width-expand@s uk-grid-small" uk-grid>
+                    {% for field in row %}
+                    <div>
+                        <label class="uk-form-label" for="{{ field.name }}">{{ field.label }}</label>
+                        <input class="uk-input {{ 'uk-form-danger' if not field.valid else '' }}"
+                            type="{{ field.type }}" id="{{ field.name }}" name="{{ field.name }}">
+                        <div
+                            class="uk-text-danger uk-text-small uk-text-right uk-margin-remove-bottom uk-margin-remove-top">
+                            {% for error_feedback in field.error_feedbacks %}
+                            {{ error_feedback }}<br>
+                            {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+        </div>
+        {% endfor %}
+        <div class="uk-flex uk-flex-right">
+            <button class="uk-margin-top uk-button uk-button-default uk-flex-center">Отправить</button>
+        </div>
+        </form>
+    </div>
+</div>
+</div>
+{% endblock %}
