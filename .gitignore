@@ -1,1 +1,4 @@
-/__pycache__
+__pycache__
+web/__pycache__
+feerc/__pycache__
+database.db
