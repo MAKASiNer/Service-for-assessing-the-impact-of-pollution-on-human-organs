@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link type="image/png" rel="icon" href="{{ url_for('static', filename = 'logo.png') }}">
     <title>{% block title %}{% endblock %}</title>
     {% block head %}{% endblock %}
     <link rel="stylesheet" href="{{ url_for('static', filename = 'css/uikit.min.css') }}" />
@@ -19,7 +20,14 @@
         <div class="uk-navbar-left">
             <div class="uk-container">
                 <div class="uk-navbar-nav">
-                    <a class="uk-text-large" href="/" style="margin-bottom: 4.5px;">Logo</a>
+                    <a class="uk-link-reset" href="/">
+                        <img class="uk-icon-image" src="{{ url_for('static', filename = 'logo.png') }}" style="
+                                display: flex;
+                                margin: auto;
+                                width: 30px;
+                                height: 30px;">
+                        <h1 class="uk-text-small uk-margin-remove">Air quality</h1>
+                    </a>
                 </div>
             </div>
         </div>
@@ -27,11 +35,11 @@
             <div class="uk-container">
                 <ul class="uk-navbar-nav">
                     {% if signed%}
-                    <li class=""><a href="#">Мониторинг</a></li>
-                    <li class=""><a href="/signout">Выйти</a></li>
+                    <li class=""><a href="{{ url_for('monitoring') }}">Мониторинг</a></li>
+                    <li class=""><a href="{{ url_for('signout') }}">Выйти</a></li>
                     {% else %}
-                    <li class=""><a href="/signin">Войти</a></li>
-                    <li class=""><a href="/signup">Зарегистрироваться</a></li>
+                    <li class=""><a href="{{ url_for('signin') }}">Войти</a></li>
+                    <li class=""><a href="{{ url_for('signup') }}">Зарегистрироваться</a></li>
                     {% endif %}
                 </ul>
             </div>

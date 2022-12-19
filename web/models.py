@@ -172,11 +172,12 @@ class AtmosphericMeasurements(BaseModel):
         pm10:   float              - PM10
     '''
     date: date_t = pw.DateField()
-    region: MeasurementRegions = pw.ForeignKeyField(MeasurementRegions, 'region_index')
+    region: MeasurementRegions = pw.ForeignKeyField(
+        MeasurementRegions, 'region_index')
     co = pw.FloatField(null=True, verbose_name='CO')
     no = pw.FloatField(null=True, verbose_name='NO')
     no2 = pw.FloatField(null=True, verbose_name='NO2')
-    sc2 = pw.FloatField(null=True, verbose_name='SO2')
+    so2 = pw.FloatField(null=True, verbose_name='SO2')
     h2s = pw.FloatField(null=True, verbose_name='H2S')
     o3 = pw.FloatField(null=True, verbose_name='O3')
     nh3 = pw.FloatField(null=True, verbose_name='NH3')
@@ -184,6 +185,13 @@ class AtmosphericMeasurements(BaseModel):
     σch = pw.FloatField(null=True, verbose_name='ΣCH')
     pm25 = pw.FloatField(null=True, verbose_name='PM2.5')
     pm10 = pw.FloatField(null=True, verbose_name='PM10')
+
+
+    @staticmethod
+    def select_by_timerange(start, end, region=None):
+        if not region:
+            return AtmosphericMeasurements.filter(AtmosphericMeasurements.date.between(start, end))
+        return AtmosphericMeasurements.filter(AtmosphericMeasurements.date.between(start, end), region=region)
 
 
 def mk_database():

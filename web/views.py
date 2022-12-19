@@ -1,11 +1,12 @@
 import re
 from flask import *
+from datetime import date, timedelta
 from flask_mail import Message
 from urllib.parse import urljoin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from web import app, mail
-from .models import Users, Tokens
+from .models import Users, Tokens, AtmosphericMeasurements, MeasurementRegions
 
 
 def ffield(label, name, type, error_feedbacks=None):
@@ -25,21 +26,24 @@ def ffield(label, name, type, error_feedbacks=None):
     }
 
 
-def render_form(title, form, session):
+def render_base(template_name_or_list, session, **context):
     return render_template(
-        'form.html',
-        title=title,
-        form=form,
-        signed=Users.from_session(session) is not None
+        template_name_or_list,
+        signed=Users.from_session(session) is not None,
+        **context
     )
+
+
+def render_form(title, form, session):
+    return render_base('form.html', session=session, title='%s - Air quality' % title, form=form, )
 
 
 def render_verify(message, session):
-    return render_template(
-        'verify.html',
-        message=message,
-        signed=Users.from_session(session) is not None
-    )
+    return render_base('verify.html', session=session, message=message)
+
+
+def render_monitoring(session):
+    return render_base('monitoring.html', session=session, regions=MeasurementRegions.filter())
 
 
 @app.route('/')
@@ -103,7 +107,8 @@ def signup():
             user.signin(session)
             token = Tokens.new(user)
             url = urljoin(request.base_url, url_for('verify', token=token))
-            msg = Message(html=render_template('verification_mail.html', url=url))
+            msg = Message(html=render_template(
+                'verification_mail.html', url=url))
             msg.add_recipient(user.email)
             mail.send(msg)
 
@@ -138,7 +143,7 @@ def signin():
 
 # деавторизация
 @app.route('/signout', methods=['GET'])
-def logout():
+def signout():
     Users.remove_session(session)
     return redirect('/')
 
@@ -157,3 +162,58 @@ def verify(token):
         msg = 'Вы успешно подтвердили почту'
 
     return render_verify(msg, session)
+
+
+@app.route('/monitoring')
+def monitoring():
+    if Users.from_session(session) is None:
+        return redirect('/signin')
+
+    return render_monitoring(session)
+
+
+# рест апи
+@app.route('/api')
+def api():
+    '''
+    /api?start=2022-12-11&region_index=buryat2
+    '''
+    if Users.from_session(session) is None:
+        return Response(status=401)
+
+    def str2date(s):
+        if isinstance(s, str):
+            return date.fromisoformat(s)
+        return date.today()
+
+    start = str2date(request.args.get('start'))
+    end = str2date(request.args.get('end'))
+
+    if not (region := MeasurementRegions.get_or_none(region_index=request.args.get('region_index'))):
+        return Response(status=400)
+
+    data = {
+        'title': region.region_name,
+        'labels': [str(start + timedelta(days=x)) for x in range((end - start).days + 1)],
+        'measures': [
+            {
+                'data': [],
+                'label': m
+            } for m in ('CO', 'NO', 'NO2', 'SO2', 'H2S', 'O3', 'NH3', 'CH4', 'ΣCH', 'PM2.5', 'PM10')
+        ]
+    }
+
+    for measure in AtmosphericMeasurements.select_by_timerange(start, end, region):
+        data['measures'][0]['data'].append(measure.co)
+        data['measures'][1]['data'].append(measure.no)
+        data['measures'][2]['data'].append(measure.no2)
+        data['measures'][3]['data'].append(measure.so2)
+        data['measures'][4]['data'].append(measure.h2s)
+        data['measures'][5]['data'].append(measure.o3)
+        data['measures'][6]['data'].append(measure.nh3)
+        data['measures'][7]['data'].append(measure.ch4)
+        data['measures'][8]['data'].append(measure.σch)
+        data['measures'][9]['data'].append(measure.pm25)
+        data['measures'][10]['data'].append(measure.pm10)
+
+    return jsonify(data)

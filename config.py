@@ -17,5 +17,7 @@ MAIL_DEFAULT_SENDER = 'maximpavlyutenkov@yandex.ru'
 MAIL_MAX_EMAILS = None
 MAIL_ASCII_ATTACHMENTS = False
 
+#SCRAPING_HOURS_INTENSITY = 12 
+
 STATIC_FOLDER = './static/'
 TEMPLATE_FOLDER = './templates/'

@@ -15,7 +15,7 @@ def cyclic_parsing():
             date, end = report['date']
 
             while date <= end:
-                keys = {'CO': 'co', 'NO': 'no', 'NO2': 'no2', 'SO2': 'sc2', 'H2S': 'h2s', 'O3': 'o3',
+                keys = {'CO': 'co', 'NO': 'no', 'NO2': 'no2', 'SO2': 'so2', 'H2S': 'h2s', 'O3': 'o3',
                         'NH3': 'nh3', 'CH4': 'ch4', 'ΣCH': 'σch', 'PM2.5': 'pm25', 'PM10': 'pm10'}
 
                 AtmosphericMeasurements.get_or_create(
