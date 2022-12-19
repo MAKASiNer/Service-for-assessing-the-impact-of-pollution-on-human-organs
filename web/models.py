@@ -1,4 +1,5 @@
 import peewee as pw
+from peewee import fn
 from uuid import uuid4
 from datetime import datetime, timedelta, date as date_t
 from config import DB_DBMS, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
@@ -186,12 +187,32 @@ class AtmosphericMeasurements(BaseModel):
     pm25 = pw.FloatField(null=True, verbose_name='PM2.5')
     pm10 = pw.FloatField(null=True, verbose_name='PM10')
 
-
     @staticmethod
     def select_by_timerange(start, end, region=None):
         if not region:
-            return AtmosphericMeasurements.filter(AtmosphericMeasurements.date.between(start, end))
-        return AtmosphericMeasurements.filter(AtmosphericMeasurements.date.between(start, end), region=region)
+            return AtmosphericMeasurements\
+                .select()\
+                .where(AtmosphericMeasurements.date.between(start, end))\
+                .order_by(AtmosphericMeasurements.date)
+        else:
+            return AtmosphericMeasurements\
+                .select()\
+                .where(
+                    (AtmosphericMeasurements.date.between(start, end)) &
+                    (AtmosphericMeasurements.region == region))\
+                .order_by(AtmosphericMeasurements.date)
+
+    @staticmethod
+    def min_date():
+        return AtmosphericMeasurements\
+            .select(fn.MIN(AtmosphericMeasurements.date))\
+            .scalar()
+
+    @staticmethod
+    def max_date():
+        return AtmosphericMeasurements\
+            .select(fn.MAX(AtmosphericMeasurements.date))\
+            .scalar()
 
 
 def mk_database():

@@ -12,6 +12,12 @@
 
             <div class="uk-width-expand@m">
                 <canvas id="chart" width="800" height="400"></canvas>
+                <div class="uk-flex uk-margin-top uk-margin-bottom" style="justify-content: space-around;">
+                    <span>C <input class="uk-input uk-form-width-small uk-form-small" type="date" min="{{ min_date }}"
+                            max="{{ max_date }}" id="startd"></span>
+                    <span>По <input class="uk-input uk-form-width-small uk-form-small" type="date" min="{{ min_date }}"
+                            max="{{ max_date }}" id="endd"></span>
+                </div>
             </div>
 
             <div class="uk-width-auto@m">
@@ -35,16 +41,16 @@
 
                 $('button.region-btn').click(function () {
                     let region_index = $(this).attr('region-index');
-                    var ajxdata = $.get("api", { region_index: region_index, start: '2022-11-21', end: '2022-12-18' })
+                    let startd = $('#startd').val();
+                    let endd = $('#endd').val();
+                    var ajxdata = $.get("api", { region_index: region_index, start: startd, end: endd })
                         .done(function (data) {
                             CHART_TITLE = data.title;
                             CHART_LABELS = data.labels;
                             CHART_DATASETS = data.measures;
                             update_chart();
                         });
-
                 });
-
 
                 function update_chart() {
                     if (CHART_TITLE == null) return;
@@ -61,7 +67,7 @@
                                 dataset['backgroundColor'] = "rgba(0,0,255,1.0)";
                                 dataset['borderColor'] = "rgba(0,0,255,0.1)";
                                 dataset['data'] = m.data;
-                                dataset['hidden'] = true;
+                                dataset['hidden'] = false;
                                 return dataset;
                             })
                         },

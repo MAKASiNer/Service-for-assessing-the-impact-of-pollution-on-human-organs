@@ -10,19 +10,12 @@ from .models import Users, Tokens, AtmosphericMeasurements, MeasurementRegions
 
 
 def ffield(label, name, type, error_feedbacks=None):
-
-    if not error_feedbacks:
-        error_feedbacks = []
-        valid = True
-    else:
-        valid = False
-
     return {
         'label': label,
-        'valid': valid,
+        'valid': not error_feedbacks,
         'name': name,
         'type': type,
-        'error_feedbacks': error_feedbacks
+        'error_feedbacks': list() if not error_feedbacks else error_feedbacks
     }
 
 
@@ -40,10 +33,6 @@ def render_form(title, form, session):
 
 def render_verify(message, session):
     return render_base('verify.html', session=session, message=message)
-
-
-def render_monitoring(session):
-    return render_base('monitoring.html', session=session, regions=MeasurementRegions.filter())
 
 
 @app.route('/')
@@ -136,7 +125,7 @@ def signin():
             form[1][0]['valid'] = False
         else:
             user.signin(session)
-            return redirect('/')
+            return redirect(url_for('monitoring'))
 
     return render_form('Вход', form, session)
 
@@ -145,7 +134,7 @@ def signin():
 @app.route('/signout', methods=['GET'])
 def signout():
     Users.remove_session(session)
-    return redirect('/')
+    return redirect(url_for('index'))
 
 
 # верификация
@@ -168,26 +157,39 @@ def verify(token):
 def monitoring():
     if Users.from_session(session) is None:
         return redirect('/signin')
-
-    return render_monitoring(session)
+    return render_base(
+        'monitoring.html',
+        session=session,
+        regions=MeasurementRegions.filter(),
+        min_date=AtmosphericMeasurements.min_date(),
+        max_date=AtmosphericMeasurements.max_date()
+    )
 
 
 # рест апи
 @app.route('/api')
 def api():
     '''
-    /api?start=2022-12-11&region_index=buryat2
+    Params:
+        start        - левая дата в iso формате (YYYY-MM-DD). По умолчанию старейшая дата в бд.
+        end          - правая дата в iso формате (YYYY-MM-DD). По умолчанию новейшая дата в бд.
+        region_index - регион.
+    
+    Пример:
+        /api?start=2022-12-11&region_index=buryat2
     '''
     if Users.from_session(session) is None:
         return Response(status=401)
 
-    def str2date(s):
-        if isinstance(s, str):
-            return date.fromisoformat(s)
-        return date.today()
+    if (v := request.args.get('start')):
+        start = date.fromisoformat(v)
+    else:
+        start = AtmosphericMeasurements.min_date()
 
-    start = str2date(request.args.get('start'))
-    end = str2date(request.args.get('end'))
+    if (v := request.args.get('end')):
+        end = date.fromisoformat(v)
+    else:
+        end = AtmosphericMeasurements.max_date()
 
     if not (region := MeasurementRegions.get_or_none(region_index=request.args.get('region_index'))):
         return Response(status=400)
