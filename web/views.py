@@ -37,7 +37,7 @@ def render_verify(message, session):
 
 @app.route('/')
 def index():
-    return str(Users.from_session(session))
+    return render_base('index.html', session=session)
 
 
 # авторизация

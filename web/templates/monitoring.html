@@ -33,24 +33,23 @@
             </div>
 
             <script>
-
+                var REGION = null;
                 var CHART_TITLE = null;
                 var CHART_LABELS = null;
                 var CHART_DATASETS = null;
                 var CHART = null;
 
-                $('button.region-btn').click(function () {
-                    let region_index = $(this).attr('region-index');
+                function update_data() {
                     let startd = $('#startd').val();
                     let endd = $('#endd').val();
-                    var ajxdata = $.get("api", { region_index: region_index, start: startd, end: endd })
+                    var ajxdata = $.get("api", { region_index: REGION, start: startd, end: endd })
                         .done(function (data) {
                             CHART_TITLE = data.title;
                             CHART_LABELS = data.labels;
                             CHART_DATASETS = data.measures;
                             update_chart();
                         });
-                });
+                }
 
                 function update_chart() {
                     if (CHART_TITLE == null) return;
@@ -81,6 +80,13 @@
                 }
 
                 $(document).ready(update_chart);
+                
+                $('input.uk-input').change(update_data);
+
+                $('button.region-btn').click(function () {
+                    REGION = $(this).attr('region-index');
+                    update_data();
+                });
 
             </script>
         </div>
