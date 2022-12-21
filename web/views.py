@@ -174,7 +174,7 @@ def api():
         start        - левая дата в iso формате (YYYY-MM-DD). По умолчанию старейшая дата в бд.
         end          - правая дата в iso формате (YYYY-MM-DD). По умолчанию новейшая дата в бд.
         region_index - регион.
-    
+
     Пример:
         /api?start=2022-12-11&region_index=buryat2
     '''
@@ -201,21 +201,28 @@ def api():
             {
                 'data': [],
                 'label': m
-            } for m in ('CO', 'NO', 'NO2', 'SO2', 'H2S', 'O3', 'NH3', 'CH4', 'ΣCH', 'PM2.5', 'PM10')
+            } for m in ('CO', 'NO', 'NO2', 'SO2', 'H2S', 'O3', 'NH3', 'PM2.5', 'PM10')
+        ] + [
+            {
+                'data': AtmosphericMeasurements.acute_HI(start, end, region).tolist(),
+                'label': 'Острое HI'
+            },
+            {
+                'data': AtmosphericMeasurements.chronic_HI(start, end, region).tolist(),
+                'label': 'Хроническое HI'
+            }
         ]
     }
 
-    for measure in AtmosphericMeasurements.select_by_timerange(start, end, region):
-        data['measures'][0]['data'].append(measure.co)
-        data['measures'][1]['data'].append(measure.no)
-        data['measures'][2]['data'].append(measure.no2)
-        data['measures'][3]['data'].append(measure.so2)
-        data['measures'][4]['data'].append(measure.h2s)
-        data['measures'][5]['data'].append(measure.o3)
-        data['measures'][6]['data'].append(measure.nh3)
-        data['measures'][7]['data'].append(measure.ch4)
-        data['measures'][8]['data'].append(measure.σch)
-        data['measures'][9]['data'].append(measure.pm25)
-        data['measures'][10]['data'].append(measure.pm10)
+    # for measure in AtmosphericMeasurements.select_by_timerange(start, end, region):
+    #     data['measures'][0]['data'].append(measure.co)
+    #     data['measures'][1]['data'].append(measure.no)
+    #     data['measures'][2]['data'].append(measure.no2)
+    #     data['measures'][3]['data'].append(measure.so2)
+    #     data['measures'][4]['data'].append(measure.h2s)
+    #     data['measures'][5]['data'].append(measure.o3)
+    #     data['measures'][6]['data'].append(measure.nh3)
+    #     data['measures'][7]['data'].append(measure.pm25)
+    #     data['measures'][8]['data'].append(measure.pm10)
 
     return jsonify(data)

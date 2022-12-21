@@ -1,3 +1,4 @@
+import numpy as np
 import peewee as pw
 from peewee import fn
 from uuid import uuid4
@@ -160,17 +161,17 @@ class AtmosphericMeasurements(BaseModel):
         id:     int                - pk
         date:   date               - дата сбора показателей
         region: MeasurementRegions - регион сбора показателей
-        co:     float              - CO
-        no:     float              - NO
-        no2:    float              - NO2
-        sc2:    float              - SO2
-        h2s:    float              - H2S
-        o3:     float              - O3
-        nh3:    float              - NH3
-        ch4:    float              - CH4
-        σch:    float              - ΣCH
-        pm25:   float              - PM2.5
-        pm10:   float              - PM10
+        co:     float              - CO    [3]
+        no:     float              - NO    [4]
+        no2:    float              - NO2   [5]
+        sc2:    float              - SO2   [6]
+        h2s:    float              - H2S   [7]
+        o3:     float              - O3    [8]
+        nh3:    float              - NH3   [9]
+        ch4:    float              - CH4   [10]
+        σch:    float              - ΣCH   [11]
+        pm25:   float              - PM2.5 [12]
+        pm10:   float              - PM10  [13]
     '''
     date: date_t = pw.DateField()
     region: MeasurementRegions = pw.ForeignKeyField(
@@ -213,6 +214,78 @@ class AtmosphericMeasurements(BaseModel):
         return AtmosphericMeasurements\
             .select(fn.MAX(AtmosphericMeasurements.date))\
             .scalar()
+
+    @staticmethod
+    def _recover_seq(a):
+        '''
+        Восстанавливает последовательность.
+
+        Пример:
+            [None, None, None, 1, 2, None, None, 5, 6, None, None] =>
+            [1, 1, 1, 1, 2, 3.5, 5, 5, 6, 6, 6]
+        '''
+        b = np.copy(a)
+        j = None
+        for i, p in enumerate(b):
+            if p is not None:
+                if j is None:
+                    b[j: i] = np.ones(i) * p
+                else:
+                    b[j: i] = np.linspace(b[j], p, i - j)
+                j = i
+    
+        if j is None:
+            b = np.zeros(b.shape)
+        else:
+            b[j:] = np.ones(i - j + 1) * b[j]
+
+        return b
+
+    @staticmethod
+    def _calc_HQ(measures, core):
+        return np.convolve(measures, core, mode='valid')
+
+    @staticmethod
+    def all_C(start, end, region, days):
+        core = np.ones(days) / days
+
+        end += timedelta(days=days)
+        # start -= timedelta(days=days // 2)
+
+        measures = np.asarray(
+            AtmosphericMeasurements.select_by_timerange(start, end, region)
+            .tuples()
+        )
+
+        m = np.apply_along_axis(
+            AtmosphericMeasurements._recover_seq, axis=1, arr=measures[:, 3:14].T)
+
+        res = np.apply_along_axis(
+            lambda x: AtmosphericMeasurements._calc_HQ(x, core), axis=1, arr=m)
+
+        return res
+
+    @staticmethod
+    def chronic_HQ(start, end, region):
+        all_c = AtmosphericMeasurements.all_C(start, end, region, 365)
+        c = np.delete(all_c, np.s_[7:9], axis=0)
+        rfc = [3, 0.06, 0.04, 0.05, 0.002, 0.03, 0.1, 0.05, 0.015]
+        return [c / rfc for c, rfc in zip(c, rfc)]
+
+    @staticmethod
+    def chronic_HI(start, end, region):
+        return np.sum(AtmosphericMeasurements.chronic_HQ(start, end, region), axis=0)
+
+    @staticmethod
+    def acute_HQ(start, end, region):
+        all_c = AtmosphericMeasurements.all_C(start, end, region, 5)
+        c = np.delete(all_c, np.s_[7:9], axis=0)
+        rfc = [23, 0.72, 0.47, 0.66, 0.1, 0.18, 0.35, 0.15, 0.065]
+        return [c / rfc for c, rfc in zip(c, rfc)]
+
+    @staticmethod
+    def acute_HI(start, end, region):
+        return np.sum(AtmosphericMeasurements.acute_HQ(start, end, region), axis=0)
 
 
 def mk_database():
