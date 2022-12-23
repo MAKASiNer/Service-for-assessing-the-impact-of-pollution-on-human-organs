@@ -1,3 +1,4 @@
+DEBUG = True
 SECRET_KEY = '6tl8r7lk)5_ie!&5-b+&5e+0c474p%!ng^b+xh+14avza*3%50'
 
 DB_DBMS = 'sqlite'
@@ -11,13 +12,14 @@ MAIL_SERVER = 'smtp.yandex.ru'
 MAIL_PORT = 465
 MAIL_USE_TLS = False
 MAIL_USE_SSL = True
-MAIL_USERNAME = 'maximpavlyutenkov@yandex.ru' # НЕ ЛОГИН, А ПОЧТА !!!
+MAIL_USERNAME = 'maximpavlyutenkov@yandex.ru'
 MAIL_PASSWORD = 'zgjsjlptrnopyyzo'
 MAIL_DEFAULT_SENDER = 'maximpavlyutenkov@yandex.ru'
 MAIL_MAX_EMAILS = None
 MAIL_ASCII_ATTACHMENTS = False
 
-#SCRAPING_HOURS_INTENSITY = 12 
+SCRAPING_INTENSITY = 43200
+CLEARING_INTENSITY = 86400
 
 STATIC_FOLDER = './static/'
 TEMPLATE_FOLDER = './templates/'
