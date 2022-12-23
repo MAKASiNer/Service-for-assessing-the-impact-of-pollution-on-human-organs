@@ -250,7 +250,7 @@ class AtmosphericMeasurements(BaseModel):
         core = np.ones(days) / days
 
         end += timedelta(days=days)
-        # start -= timedelta(days=days // 2)
+        start -= timedelta(days=days // 2)
 
         measures = np.asarray(
             AtmosphericMeasurements.select_by_timerange(start, end, region)
@@ -278,7 +278,7 @@ class AtmosphericMeasurements(BaseModel):
 
     @staticmethod
     def acute_HQ(start, end, region):
-        all_c = AtmosphericMeasurements.all_C(start, end, region, 5)
+        all_c = AtmosphericMeasurements.all_C(start, end, region, 1)
         c = np.delete(all_c, np.s_[7:9], axis=0)
         rfc = [23, 0.72, 0.47, 0.66, 0.1, 0.18, 0.35, 0.15, 0.065]
         return [c / rfc for c, rfc in zip(c, rfc)]

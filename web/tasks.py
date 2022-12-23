@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from web import scheduler
+from web import scheduler, SCRAPING_INTENSITY, CLEARING_INTENSITY
 from feerc import get_actual_data
 from .models import MeasurementRegions, AtmosphericMeasurements, Tokens
 
@@ -35,9 +35,9 @@ def clearing_tokens():
 
 # автоматический парсинг
 scheduler.add_job(
-    id=cyclic_parsing.__name__, func=cyclic_parsing, trigger='interval', hours=12)
+    id=cyclic_parsing.__name__, func=cyclic_parsing, trigger='interval', seconds=SCRAPING_INTENSITY)
 
 # автоматическая чистка бд
 scheduler.add_job(
-    id=clearing_tokens.__name__, func=clearing_tokens, trigger='interval', hours=24)
+    id=clearing_tokens.__name__, func=clearing_tokens, trigger='interval', seconds=CLEARING_INTENSITY)
 

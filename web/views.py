@@ -214,15 +214,21 @@ def api():
         ]
     }
 
-    # for measure in AtmosphericMeasurements.select_by_timerange(start, end, region):
-    #     data['measures'][0]['data'].append(measure.co)
-    #     data['measures'][1]['data'].append(measure.no)
-    #     data['measures'][2]['data'].append(measure.no2)
-    #     data['measures'][3]['data'].append(measure.so2)
-    #     data['measures'][4]['data'].append(measure.h2s)
-    #     data['measures'][5]['data'].append(measure.o3)
-    #     data['measures'][6]['data'].append(measure.nh3)
-    #     data['measures'][7]['data'].append(measure.pm25)
-    #     data['measures'][8]['data'].append(measure.pm10)
+    for measure in AtmosphericMeasurements.select_by_timerange(start, end, region):
+        data['measures'][0]['data'].append(measure.co)
+        data['measures'][1]['data'].append(measure.no)
+        data['measures'][2]['data'].append(measure.no2)
+        data['measures'][3]['data'].append(measure.so2)
+        data['measures'][4]['data'].append(measure.h2s)
+        data['measures'][5]['data'].append(measure.o3)
+        data['measures'][6]['data'].append(measure.nh3)
+        data['measures'][7]['data'].append(measure.pm25)
+        data['measures'][8]['data'].append(measure.pm10)
+
+    clrs = ('#FF0000', '#FF8000', '#FFFF00', '#80FF00', '#006600',
+            '#00FFFF', '#0080FF', '#0000FF', '#7F00FF', '#FF00FF', '#000000')
+
+    for i, clr in zip(range(len(data['measures'])), clrs):
+        data['measures'][i]['color'] = clr
 
     return jsonify(data)

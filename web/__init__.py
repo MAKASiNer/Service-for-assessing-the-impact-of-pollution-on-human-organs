@@ -6,6 +6,7 @@ models.mk_database()
 from config import *
 from flask import Flask
 app = Flask(__name__)
+app.debug = DEBUG
 app.secret_key = SECRET_KEY
 app.static_folder = STATIC_FOLDER
 app.template_folder= TEMPLATE_FOLDER
