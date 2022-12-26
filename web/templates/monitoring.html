@@ -67,6 +67,7 @@
                                 dataset['borderColor'] = m.color;
                                 dataset['data'] = m.data;
                                 dataset['hidden'] = false;
+                                dataset['lineTension'] =  0;
                                 return dataset;
                             })
                         },
@@ -80,7 +81,7 @@
                 }
 
                 $(document).ready(update_chart);
-                
+
                 $('input.uk-input').change(update_data);
 
                 $('button.region-btn').click(function () {

@@ -199,31 +199,20 @@ def api():
         'labels': [str(start + timedelta(days=x)) for x in range((end - start).days + 1)],
         'measures': [
             {
-                'data': [],
-                'label': m
-            } for m in ('CO', 'NO', 'NO2', 'SO2', 'H2S', 'O3', 'NH3', 'PM2.5', 'PM10')
-        ] + [
-            {
-                'data': AtmosphericMeasurements.acute_HI(start, end, region).tolist(),
+                'data': AtmosphericMeasurements.HI_1(start, end, region).tolist(),
                 'label': 'Острое HI'
             },
             {
-                'data': AtmosphericMeasurements.chronic_HI(start, end, region).tolist(),
+                'data': AtmosphericMeasurements.HI_365(start, end, region).tolist(),
                 'label': 'Хроническое HI'
             }
+        ] + [
+            {
+                'data': r.tolist(),
+                'label': l
+            } for l, r in zip(('CO', 'NO', 'NO2', 'SO2', 'H2S', 'O3', 'NH3'), AtmosphericMeasurements.risk(start, end, region))
         ]
     }
-
-    for measure in AtmosphericMeasurements.select_by_timerange(start, end, region):
-        data['measures'][0]['data'].append(measure.co)
-        data['measures'][1]['data'].append(measure.no)
-        data['measures'][2]['data'].append(measure.no2)
-        data['measures'][3]['data'].append(measure.so2)
-        data['measures'][4]['data'].append(measure.h2s)
-        data['measures'][5]['data'].append(measure.o3)
-        data['measures'][6]['data'].append(measure.nh3)
-        data['measures'][7]['data'].append(measure.pm25)
-        data['measures'][8]['data'].append(measure.pm10)
 
     clrs = ('#FF0000', '#FF8000', '#FFFF00', '#80FF00', '#006600',
             '#00FFFF', '#0080FF', '#0000FF', '#7F00FF', '#FF00FF', '#000000')

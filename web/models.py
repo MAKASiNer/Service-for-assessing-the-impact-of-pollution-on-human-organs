@@ -190,6 +190,7 @@ class AtmosphericMeasurements(BaseModel):
 
     @staticmethod
     def select_by_timerange(start, end, region=None):
+        '''Производит выборку по региону и дате. Сортирует во возрастанию даты'''
         if not region:
             return AtmosphericMeasurements\
                 .select()\
@@ -218,7 +219,7 @@ class AtmosphericMeasurements(BaseModel):
     @staticmethod
     def _recover_seq(a):
         '''
-        Восстанавливает последовательность.
+        Линейно восстанавливает последовательность.
 
         Пример:
             [None, None, None, 1, 2, None, None, 5, 6, None, None] =>
@@ -233,7 +234,7 @@ class AtmosphericMeasurements(BaseModel):
                 else:
                     b[j: i] = np.linspace(b[j], p, i - j)
                 j = i
-    
+
         if j is None:
             b = np.zeros(b.shape)
         else:
@@ -242,50 +243,156 @@ class AtmosphericMeasurements(BaseModel):
         return b
 
     @staticmethod
-    def _calc_HQ(measures, core):
-        return np.convolve(measures, core, mode='valid')
+    def C(start, end, region, days=1, indexes=None):
+        '''
+        Подсчитывает С - среднее арифмметическое по соседям слева и справа 
 
-    @staticmethod
-    def all_C(start, end, region, days):
-        core = np.ones(days) / days
+        Args:
+            start:   date               - дата начала выборки (включительно)
+            end:     date               - дата конца выборки (включительно)
+            region:  str                - регион, для которого брать измерения
+            days:    int                - длина выборки для среднего (по скольки дням будет считатся среднее арифметичекое)
+            indexes: str|list[str]|None - элемент или элементы ('CO', 'NO', 'NO2', 'SO2', 'H2S', 'O3', 'NH3', 'CH4', 'ΣCH', 'PM2.5', 'PM10')
 
-        end += timedelta(days=days)
-        start -= timedelta(days=days // 2)
+        Returns:
+            NDArray NxM, где N = len(indexes), M = end - start
+        '''
+        t1 = end + timedelta(days=days - days % 2)
+        t0 = start - timedelta(days=days // 2)
 
         measures = np.asarray(
-            AtmosphericMeasurements.select_by_timerange(start, end, region)
+            AtmosphericMeasurements.select_by_timerange(t0, t1, region)
             .tuples()
+        )[:, 3:14].T
+
+        if indexes is None:
+            indexes = ['CO', 'NO', 'NO2', 'SO2', 'H2S', 'O3',
+                       'NH3', 'CH4', 'ΣCH', 'PM2.5', 'PM10']
+
+        def extract_index(v):
+            return {'CO': 0, 'NO': 1, 'NO2': 2, 'SO2': 3, 'H2S': 4, 'O3': 5, 'NH3': 6, 'CH4': 7, 'ΣCH': 8, 'PM2.5': 9, 'PM10': 10}.get(v)
+
+        m = []
+        if isinstance(indexes, str):
+            if (i := extract_index(index)) is not None:
+                m.append(measures[i])
+        elif hasattr(indexes, '__iter__'):
+            for index in indexes:
+                if (i := extract_index(index)) is not None:
+                    m.append(measures[i])
+        else:
+            raise TypeError('unexpected indexes type %s' % type(indexes))
+
+        return np.apply_along_axis(
+            lambda x: np.convolve(x, np.ones(days) / days, mode='valid'),
+            axis=1,
+            arr=np.apply_along_axis(
+                AtmosphericMeasurements._recover_seq,
+                axis=1,
+                arr=m
+            )
         )
 
-        m = np.apply_along_axis(
-            AtmosphericMeasurements._recover_seq, axis=1, arr=measures[:, 3:14].T)
-
-        res = np.apply_along_axis(
-            lambda x: AtmosphericMeasurements._calc_HQ(x, core), axis=1, arr=m)
-
-        return res
+    @staticmethod
+    def HI(start, end, region, days, indexes, rfc_list):
+        c = AtmosphericMeasurements.C(start, end, region, days, indexes)
+        rfc = iter(rfc_list)
+        hq = np.apply_along_axis(
+            lambda c: np.divide(c, next(rfc)),
+            axis=1,
+            arr=c
+        )
+        hi = np.sum(hq, axis=0)
+        return hi
 
     @staticmethod
-    def chronic_HQ(start, end, region):
-        all_c = AtmosphericMeasurements.all_C(start, end, region, 365)
-        c = np.delete(all_c, np.s_[7:9], axis=0)
-        rfc = [3, 0.06, 0.04, 0.05, 0.002, 0.03, 0.1, 0.05, 0.015]
-        return [c / rfc for c, rfc in zip(c, rfc)]
+    def HI_1(start, end, region):
+        return AtmosphericMeasurements.HI(
+            start=start,
+            end=end,
+            region=region,
+            days=1,
+            indexes=[
+                'CO', 'NO', 'NO2', 'SO2', 'H2S', 'O3', 'NH3', 'PM2.5', 'PM10'
+            ],
+            rfc_list=[
+                23, 0.72, 0.47, 0.66, 0.1, 0.18, 0.35, 0.15, 0.065
+            ]
+        )
 
     @staticmethod
-    def chronic_HI(start, end, region):
-        return np.sum(AtmosphericMeasurements.chronic_HQ(start, end, region), axis=0)
+    def HI_365(start, end, region):
+        return AtmosphericMeasurements.HI(
+            start=start,
+            end=end,
+            region=region,
+            days=365,
+            indexes=[
+                'CO', 'NO', 'NO2', 'SO2', 'H2S', 'O3', 'NH3', 'PM2.5', 'PM10'
+            ],
+            rfc_list=[
+                3, 0.06, 0.04, 0.05, 0.002, 0.03, 0.1, 0.05, 0.015
+            ]
+        )
 
     @staticmethod
-    def acute_HQ(start, end, region):
-        all_c = AtmosphericMeasurements.all_C(start, end, region, 1)
-        c = np.delete(all_c, np.s_[7:9], axis=0)
-        rfc = [23, 0.72, 0.47, 0.66, 0.1, 0.18, 0.35, 0.15, 0.065]
-        return [c / rfc for c, rfc in zip(c, rfc)]
+    def prod(start, end, region, indexes, pdk_list, hazard_list):
+
+        def a(hazard):
+            return {1: 9.15, 2: 5.51, 3: 2.35, 4: 1.41}[hazard]
+
+        def b(hazard):
+            return {1: 11.66, 2: 7.49, 3: 3.73, 4: 2.33}[hazard]
+
+        def prod(c, pdk, hazard):
+            return np.log10(c / pdk) * b(hazard) - a(hazard)
+
+        c = AtmosphericMeasurements.C(
+            start=start,
+            end=end,
+            region=region,
+            days=1,
+            indexes=indexes
+        )
+
+        pdk = iter(pdk_list)
+        hazard = iter(hazard_list)
+        return np.apply_along_axis(
+            lambda c: prod(c.astype(float), next(pdk), next(hazard)),
+            axis=1,
+            arr=c
+        )
 
     @staticmethod
-    def acute_HI(start, end, region):
-        return np.sum(AtmosphericMeasurements.acute_HQ(start, end, region), axis=0)
+    def risk(start,
+             end,
+             region,
+             indexes=['CO', 'NO', 'NO2', 'SO2', 'H2S', 'O3', 'NH3'],
+             pdk_list=[5, 0.4, 0.2, 0.5, 0.008, 0.16, 0.2],
+             hazard_list=[4, 3, 3, 3, 2, 1, 4]):
+
+        table = (
+                (-3.0, 0.001), (-2.5, 0.006), (-2.0, 0.023), (-1.9, 0.029),
+                (-1.8, 0.036), (-1.7, 0.045), (-1.6, 0.055), (-1.5, 0.067),
+                (-1.4, 0.081), (-1.3, 0.097), (-1.2, 0.115), (-1.1, 0.136),
+                (-1.0, 0.157), (-0.9, 0.184), (-0.8, 0.212), (-0.7, 0.242),
+                (-0.6, 0.274), (-0.5, 0.309), (-0.4, 0.345), (-0.3, 0.382),
+                (-0.2, 0.421), (-0.1, 0.460), (0.0, 0.500), (0.1, 0.540),
+                (0.2, 0.579), (0.3, 0.618), (0.4, 0.655), (0.5, 0.692),
+                (0.6, 0.726), (0.7, 0.758), (0.8, 0.788), (0.9, 0.816),
+                (1.0, 0.841), (1.1, 0.864), (1.2, 0.885), (1.3, 0.903),
+                (1.4, 0.919), (1.5, 0.933), (1.6, 0.945), (1.7, 0.955),
+                (1.8, 0.964), (1.9, 0.971), (2.0, 0.977), (2.5, 0.994),
+                (3.0, 0.999))
+
+        def scalar_risk(prod):
+            for a, b in table:
+                if prod <= a:
+                    return b
+            return 1.0
+
+        return np.vectorize(scalar_risk)(
+            AtmosphericMeasurements.prod(start, end, region, indexes, pdk_list, hazard_list))
 
 
 def mk_database():

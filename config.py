@@ -1,4 +1,4 @@
-DEBUG = True
+DEBUG = False
 SECRET_KEY = '6tl8r7lk)5_ie!&5-b+&5e+0c474p%!ng^b+xh+14avza*3%50'
 
 DB_DBMS = 'sqlite'

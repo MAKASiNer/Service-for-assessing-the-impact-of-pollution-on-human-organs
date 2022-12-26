@@ -33,6 +33,8 @@ def clearing_tokens():
             Tokens.delete_by_id(token)
             
 
+#cyclic_parsing()
+
 # автоматический парсинг
 scheduler.add_job(
     id=cyclic_parsing.__name__, func=cyclic_parsing, trigger='interval', seconds=SCRAPING_INTENSITY)
