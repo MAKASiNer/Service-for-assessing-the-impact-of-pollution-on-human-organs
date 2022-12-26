@@ -257,7 +257,7 @@ class AtmosphericMeasurements(BaseModel):
         Returns:
             NDArray NxM, где N = len(indexes), M = end - start
         '''
-        t1 = end + timedelta(days=days - days % 2)
+        t1 = end + timedelta(days=days // 2)
         t0 = start - timedelta(days=days // 2)
 
         measures = np.asarray(
