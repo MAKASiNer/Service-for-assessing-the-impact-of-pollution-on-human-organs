@@ -1,22 +1,41 @@
 {% extends 'base.html' %}
 
-<!-- {% block title%}{% endblock %} -->
+<!-- {% block title%}
+{% if kind == 'stat'%}
+Измерения
+{% elif kind == 'hi'%}
+Индекс опасности
+{% elif kind == 'risk'%}
+Риски
+{% endif %}
+{% endblock %} -->
+
 {% block head %}
 <script src="{{ url_for('static', filename = 'js/Chart.js') }}"></script>
 {% endblock %}
 
 {% block body%}
 <div class="uk-container">
-    <div class="uk-flex uk-card uk-card-large uk-card-default uk-margin-large-top">
+
+    <ul class="uk-margin-large-top" uk-tab>
+        {% for option in options %}
+        <li>
+            <button class="option-btn uk-button uk-button-text" option-index="{{ option.id }}">
+                {{ option }}
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <div class="uk-flex uk-card uk-card-large uk-card-default">
         <div class="" uk-grid>
 
             <div class="uk-width-expand@m">
-                <canvas id="chart" width="800" height="400"></canvas>
+                <canvas id="chart" width="1000" height="500"></canvas>
                 <div class="uk-flex uk-margin-top uk-margin-bottom" style="justify-content: space-around;">
-                    <span>C <input class="uk-input uk-form-width-small uk-form-small" type="date" min="{{ min_date }}"
-                            max="{{ max_date }}" id="startd"></span>
-                    <span>По <input class="uk-input uk-form-width-small uk-form-small" type="date" min="{{ min_date }}"
-                            max="{{ max_date }}" id="endd"></span>
+                    <span>C <input class="uk-input uk-form-width-small uk-form-small" type="date" min="{{ min_date }}" max="{{ max_date }}" value="{{ min_date }}" id="startd"></span>
+                    <span><button class="uk-icon-button" id="download", uk-icon="download"></button></span>
+                    <span>По <input class="uk-input uk-form-width-small uk-form-small" type="date" min="{{ min_date }}" max="{{ max_date }}" value="{{ max_date }}" id="endd"></span>
                 </div>
             </div>
 
@@ -24,8 +43,8 @@
                 <ul class="uk-list uk-height-large uk-overflow-auto">
                     {% for region in regions %}
                     <li>
-                        <button class="region-btn uk-button uk-button-text" region-index="{{ region.region_index }}">
-                            {{ region.region_name }}
+                        <button class="region-btn uk-button uk-button-text" region-index="{{ region.id }}">
+                            {{ region.name }}
                         </button>
                     </li>
                     {% endfor %}
@@ -33,22 +52,25 @@
             </div>
 
             <script>
-                var REGION = null;
+                var REGION = 1;
+                var OPTION = 1;
                 var CHART_TITLE = null;
-                var CHART_LABELS = null;
-                var CHART_DATASETS = null;
+                var LABELS = null;
+                var DATASETS = null;
                 var CHART = null;
 
                 function update_data() {
                     let startd = $('#startd').val();
                     let endd = $('#endd').val();
-                    var ajxdata = $.get("api", { region_index: REGION, start: startd, end: endd })
+                    var ajxdata = $.get(`${window.location.origin}/api`, { kind: '{{kind}}' , region_id: REGION, option: OPTION, start: startd, end: endd })
                         .done(function (data) {
                             CHART_TITLE = data.title;
-                            CHART_LABELS = data.labels;
-                            CHART_DATASETS = data.measures;
+                            LABELS = data.labels;
+                            DATASETS = data.datasets;
                             update_chart();
                         });
+
+                    console.log(ajxdata);
                 }
 
                 function update_chart() {
@@ -58,18 +80,8 @@
                     CHART = new Chart("chart", {
                         type: "line",
                         data: {
-                            labels: CHART_LABELS,
-                            datasets: CHART_DATASETS.map(function (m) {
-                                var dataset = {};
-                                dataset['label'] = m.label;
-                                dataset['fill'] = false;
-                                dataset['backgroundColor'] = m.color;
-                                dataset['borderColor'] = m.color;
-                                dataset['data'] = m.data;
-                                dataset['hidden'] = false;
-                                dataset['lineTension'] =  0;
-                                return dataset;
-                            })
+                            labels: LABELS,
+                            datasets: DATASETS,
                         },
                         options: {
                             title: {
@@ -80,7 +92,7 @@
                     });
                 }
 
-                $(document).ready(update_chart);
+                $(document).ready(update_data);
 
                 $('input.uk-input').change(update_data);
 
@@ -88,8 +100,19 @@
                     REGION = $(this).attr('region-index');
                     update_data();
                 });
+                
+                $('button.option-btn').click(function () {
+                    OPTION = $(this).attr('option-index');
+                    update_data();
+                });
 
+                $('#download').click(function () {
+                    url = `${window.location.origin}/download/${'{{kind}}'}/${REGION}/${OPTION}/${$('#startd').val()}/${$('#endd').val()}`;
+                    window.location.href = url;
+                });
+                
             </script>
+
         </div>
     </div>
 </div>

@@ -34,8 +34,21 @@
         <div class="uk-navbar-right">
             <div class="uk-container">
                 <ul class="uk-navbar-nav">
-                    {% if signed%}
-                    <li class=""><a href="{{ url_for('monitoring') }}">Мониторинг</a></li>
+                    {% if signed %}
+                    <li>
+                        <style> .uk-background-secondary.uk-dropdown.uk-open { top: 80px !important; } </style>
+                        <a class="">Мониторинг</a>
+                        <div class="uk-background-secondary" uk-dropdown>
+                            <ul class="uk-nav uk-dropdown-nav">
+                                <li class=""><a href="{{ url_for('monitoring', kind='acute') }}">Среднесуточные показания</a></li>
+                                <li class=""><a href="{{ url_for('monitoring', kind='chronic') }}">Среднегодовые показания</a></li>
+                                <li class=""><a href="{{ url_for('monitoring', kind='acute hi') }}">Острый индекс опасности</a></li>
+                                <li class=""><a href="{{ url_for('monitoring', kind='chronic hi') }}">Хронический индекс опасности</a></li>
+                                <li class=""><a href="{{ url_for('monitoring', kind='risk') }}">Риски</a></li>
+                            </ul>
+                        </div>
+                    </li>
+
                     <li class=""><a href="{{ url_for('signout') }}">Выйти</a></li>
                     {% else %}
                     <li class=""><a href="{{ url_for('signin') }}">Войти</a></li>
